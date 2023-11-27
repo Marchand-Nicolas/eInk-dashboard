@@ -1,3 +1,6 @@
+// Import environnement variables
+#include "env.h"
+
 // GxEPD2_MinimumExample.ino by Jean-Marc Zingg
 
 // purpose is e.g. to determine minimum code and ram use by this library
@@ -34,30 +37,25 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-// GPIO where the DS18B20 is connected to
-const int oneWireBus = 32;
-
-// Setup a oneWire instance to communicate with any OneWire devices
-OneWire oneWire(oneWireBus);
-
-// Pass our oneWire reference to Dallas Temperature sensor
-DallasTemperature sensors(&oneWire);
-
 // HTTP :
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <HTTPClient.h>
 
-#include "env.h"
-
+// APIs (process JSON responses)
 #include <ArduinoJson.h>
 
+// WiFi
 WiFiMulti wifiMulti;
+
+// Setup a oneWire instance to communicate with any OneWire devices
+OneWire oneWire(oneWireBus);
+// Pass our oneWire reference to Dallas Temperature sensor
+DallasTemperature sensors(&oneWire);
 
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("=== start ===");
   // Wifi
   wifiMulti.addAP(wifiSSID, wifiPassword);
   // Temperature
@@ -161,7 +159,6 @@ void refreshDate()
       String hour = date.substring(11, 13);
       String minute = date.substring(14, 16);
       // Display
-      Serial.println(date);
       display.setFont(&FreeMonoBold12pt7b);
       display.setCursor(0, 20);
       display.print(day + "/" + month + "/" + year + " - " + hour + ":" + minute);
@@ -190,7 +187,6 @@ void refreshBlockNumber()
       // Extract values
       String blockNumber = doc["result"];
       // Display
-      Serial.println(blockNumber);
       display.setFont(&FreeMonoBold18pt7b);
       display.setCursor(0, 60);
       display.print(blockNumber);
