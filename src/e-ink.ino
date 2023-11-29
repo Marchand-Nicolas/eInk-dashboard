@@ -1,6 +1,9 @@
 // Import environnement variables
 #include "env.h"
 
+// ESP32
+#include <esp_sleep.h>
+
 // GxEPD2_MinimumExample.ino by Jean-Marc Zingg
 
 // purpose is e.g. to determine minimum code and ram use by this library
@@ -45,6 +48,8 @@
 // APIs (process JSON responses)
 #include <ArduinoJson.h>
 
+const uint32_t SLEEP_DURATION = sleepDurationSeconds * 1000000; // µs
+
 // WiFi
 WiFiMulti wifiMulti;
 
@@ -60,18 +65,28 @@ void setup()
   wifiMulti.addAP(wifiSSID, wifiPassword);
   // Temperature
   sensors.begin();
+
   // Screen
   display.init();
   display.setFullWindow();
-  display.fillScreen(GxEPD_WHITE);
-
   // Horizontal
   display.setRotation(1);
   display.setTextColor(GxEPD_BLACK);
   display.setFont(&FreeMonoBold9pt7b);
-  display.setCursor(0, 20);
-  display.print("Connecting to Wifi...");
-  display.display(true);
+
+  esp_sleep_wakeup_cause_t wakeup_reason;
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  switch (wakeup_reason)
+  {
+  case ESP_SLEEP_WAKEUP_TIMER:
+    break;
+  default:
+    display.fillScreen(GxEPD_WHITE);
+    display.setCursor(0, 20);
+    display.print("Connecting to Wifi...");
+    display.display(true);
+  }
 }
 
 bool canRefresh = true;
@@ -95,11 +110,11 @@ void refresh()
     refreshBattery();
     refreshTemperature();
     display.display(true);
-    delay(1000 * refreshSeconds);
+    hibernate(SLEEP_DURATION);
   }
   else
   {
-    delay(1000);
+    delay(100);
   }
 }
 
@@ -244,4 +259,15 @@ double getRawVoltage()
     return 0;
 
   return -0.000000000000016 * pow(reading, 4) + 0.000000000118171 * pow(reading, 3) - 0.000000301211691 * pow(reading, 2) + 0.001109019271794 * reading + 0.034143524634089;
+}
+
+void hibernate(uint64_t duration)
+{
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_SLOW_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_FAST_MEM, ESP_PD_OPTION_OFF);
+  esp_sleep_pd_config(ESP_PD_DOMAIN_XTAL, ESP_PD_OPTION_OFF);
+  // Configure Timer as wakeup source
+  esp_sleep_enable_timer_wakeup(duration);
+  esp_deep_sleep_start();
 }
