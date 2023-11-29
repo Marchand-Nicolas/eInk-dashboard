@@ -139,7 +139,6 @@ void refreshBattery()
   if (chargeLevel < 5)
   {
     canRefresh = false;
-    display.fillScreen(GxEPD_WHITE);
     display.setCursor(0, 20);
     display.setFont(&FreeMonoBold18pt7b);
     display.print("Battery too low (" + String(chargeLevel) + "%)");
